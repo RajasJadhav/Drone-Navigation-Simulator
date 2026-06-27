@@ -2,29 +2,35 @@ using UnityEngine;
 
 public class DroneController : MonoBehaviour
 {
+    // Drone propellers
     public Transform frontLeftPropeller;
     public Transform frontRightPropeller;
     public Transform backLeftPropeller;
     public Transform backRightPropeller;
+
+    // Drone body for tilt animation
     public Transform droneModel;
 
+    // Speed variables
     public float propellerSpeed = 1000f;
-
     public float moveSpeed = 10f;
     public float throttleSpeed = 5f;
     public float yawSpeed = 80f;
 
-
+    // Tilt settings
     public float maxTiltAngle = 20f;
     public float tiltSpeed = 5f;
 
+    // Stores the height where the drone should hover
     private float hoverHeight;
 
     private Rigidbody rb;
 
-    float throttle = 0f; //up & down
-    float yaw = 0f; //rotation
+    // Movement inputs
+    float throttle = 0f; 
+    float yaw = 0f;
 
+    // Checks whether the drone is armed
     public bool isArmed = false;
 
     void Start()
@@ -44,7 +50,7 @@ public class DroneController : MonoBehaviour
 
         if (!isArmed)
         {
-            RotatePropellersIdle(); // propellers spin slowly while disarmed
+            RotatePropellersIdle(); 
             return;
         }
 
@@ -57,41 +63,39 @@ public class DroneController : MonoBehaviour
 
     void ReadInput()
     {
-        // Reset every frame
+        
         throttle = 0f;
         yaw = 0f;
 
-        // Hold Space to go up
         if (Input.GetKey(KeyCode.Space))
         {
             throttle = 1f;
         }
 
-        // Hold Left Ctrl to go down
         if (Input.GetKey(KeyCode.LeftControl))
         {
             throttle = -1f;
         }
 
-        // Hold Q to rotate left
         if (Input.GetKey(KeyCode.Q))
         {
             yaw = -1f;
         }
 
-        // Hold E to rotate right
         if (Input.GetKey(KeyCode.E))
         {
             yaw = 1f;
         }
     }
+    // Move forward and backward
     Vector3 MoveForward()
     {
-        float pitch = Input.GetAxis("Vertical"); //foraward & backward
+        float pitch = Input.GetAxis("Vertical"); 
         Vector3 forwardmovement = transform.forward * pitch * moveSpeed;
         return forwardmovement;
     }
 
+    // Move left and right
     Vector3 MoveSideWays()
     {
         float roll = Input.GetAxis("Horizontal"); //left & right
@@ -99,6 +103,7 @@ public class DroneController : MonoBehaviour
         return sidemovement;
     }
 
+    // Move up and down
     Vector3 MoveVertical()
     {
         if (throttle != 0)
@@ -111,24 +116,23 @@ public class DroneController : MonoBehaviour
         return Vector3.up * difference * 5f;
     }
 
+    // Apply movement
     void Movement()
     {
         Vector3 movement = MoveForward() + MoveSideWays() + MoveVertical();
 
         Vector3 velocity = rb.linearVelocity;
 
-        // Horizontal movement
         velocity.x = movement.x;
         velocity.z = movement.z;
 
-        // Vertical movement
         if (throttle != 0)
         {
             velocity.y = movement.y;
         }
         else
         {
-            velocity.y = 0f; // Hold current altitude
+            velocity.y = 0f; 
         }
 
         Vector3 targetVelocity = movement;
@@ -140,20 +144,25 @@ public class DroneController : MonoBehaviour
         );
     }
 
+    // Rotate the drone
     void Rotation()
     {
-        transform.Rotate(Vector3.up * yaw * yawSpeed * Time.deltaTime);
+        if (yaw != 0)
+        {
+            rb.MoveRotation(
+                rb.rotation * Quaternion.Euler(0, yaw * yawSpeed * Time.deltaTime, 0)
+            );
+        }
     }
 
+    // Rotate propellers
     void RotatePropellers()
     {
         float currentSpeed = 700f;
 
-        // Faster when flying
         if (throttle != 0)
             currentSpeed = 1200f;
 
-        // Even faster while moving
         if (Input.GetAxis("Vertical") != 0 ||
             Input.GetAxis("Horizontal") != 0 ||
             yaw != 0)
@@ -166,20 +175,18 @@ public class DroneController : MonoBehaviour
         backLeftPropeller.Rotate(Vector3.down * currentSpeed * Time.deltaTime);
     }
 
+    // Tilt the drone while moving
     void TiltDrone()
     {
-        // Read movement input
         float pitch = Input.GetAxis("Vertical");
         float roll = Input.GetAxis("Horizontal");
 
-        // Calculate desired tilt
         Quaternion targetRotation = Quaternion.Euler(
             -pitch * maxTiltAngle,
             0,
             -roll * maxTiltAngle
         );
 
-        // Smoothly tilt the drone model
         droneModel.localRotation = Quaternion.Lerp(
             droneModel.localRotation,
             targetRotation,
@@ -187,11 +194,13 @@ public class DroneController : MonoBehaviour
         );
     }
 
+    // Arm the drone
     public void ArmDrone()
     {
         isArmed = true;
     }
 
+    // Disarm the drone
     public void DisarmDrone()
     {
         isArmed = false;
@@ -200,16 +209,19 @@ public class DroneController : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
     }
 
+    // Get current speed
     public float GetSpeed()
     {
         return rb.linearVelocity.magnitude;
     }
 
+    // Get current height
     public float GetAltitude()
     {
         return transform.position.y;
     }
 
+    // Spin propellers slowly when disarmed
     void RotatePropellersIdle()
     {
         float idleSpeed = 300f;
