@@ -25,6 +25,8 @@ public class DroneController : MonoBehaviour
     float throttle = 0f; //up & down
     float yaw = 0f; //rotation
 
+    public bool isArmed = false;
+
     void Start()
     {
         rb = GetComponent<Rigidbody>();
@@ -39,6 +41,13 @@ public class DroneController : MonoBehaviour
 
     void Update()
     {
+
+        if (!isArmed)
+        {
+            RotatePropellersIdle(); // propellers spin slowly while disarmed
+            return;
+        }
+
         ReadInput();
         Movement();
         Rotation();
@@ -176,6 +185,40 @@ public class DroneController : MonoBehaviour
             targetRotation,
             tiltSpeed * Time.deltaTime
         );
+    }
+
+    public void ArmDrone()
+    {
+        isArmed = true;
+    }
+
+    public void DisarmDrone()
+    {
+        isArmed = false;
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+    }
+
+    public float GetSpeed()
+    {
+        return rb.linearVelocity.magnitude;
+    }
+
+    public float GetAltitude()
+    {
+        return transform.position.y;
+    }
+
+    void RotatePropellersIdle()
+    {
+        float idleSpeed = 300f;
+
+        frontLeftPropeller.Rotate(Vector3.up * idleSpeed * Time.deltaTime);
+        backRightPropeller.Rotate(Vector3.up * idleSpeed * Time.deltaTime);
+
+        frontRightPropeller.Rotate(Vector3.down * idleSpeed * Time.deltaTime);
+        backLeftPropeller.Rotate(Vector3.down * idleSpeed * Time.deltaTime);
     }
 
 }
